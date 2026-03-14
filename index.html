@@ -213,38 +213,61 @@
         /* ── Model selector ── */
         .model-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 8px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
         }
         .model-chip {
-            padding: 11px 14px;
+            padding: 14px 14px 12px;
             border-radius: var(--radius-sm);
             border: 1px solid var(--border);
             background: var(--surface-2);
             color: var(--text-dim);
             font-family: var(--font);
-            font-size: 13px;
-            font-weight: 600;
             cursor: pointer;
-            text-align: center;
+            text-align: left;
             transition: all 0.2s;
-            white-space: nowrap;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
         }
-        .model-chip:hover { border-color: var(--border-hover); color: var(--text); }
+        .model-chip:hover { border-color: var(--border-hover); }
         .model-chip.active {
             background: var(--surface-3);
-            border-color: var(--accent);
-            color: var(--accent-2);
-            box-shadow: 0 0 0 3px var(--accent-glow);
+            border-color: var(--chip-accent, var(--accent));
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--chip-accent, var(--accent)) 20%, transparent);
         }
-        .model-chip .sub {
-            display: block;
+        .chip-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .chip-ver {
             font-size: 10px;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.3px;
+        }
+        .model-chip.active .chip-ver {
+            color: var(--chip-accent, var(--accent-2));
+            opacity: 0.8;
+        }
+        .chip-spec {
+            font-size: 10.5px;
             font-weight: 500;
             color: var(--text-muted);
-            margin-top: 2px;
+            margin-top: 4px;
+            padding-top: 6px;
+            border-top: 1px solid var(--border);
+            line-height: 1.4;
+            letter-spacing: -0.1px;
         }
-        .model-chip.active .sub { color: var(--accent-2); opacity: 0.7; }
+        .model-chip.active .chip-spec {
+            color: var(--text-dim);
+            border-top-color: var(--border-hover);
+        }
 
         /* ── Generate button ── */
         .gen-btn {
@@ -611,16 +634,16 @@
         // ─── Models ───
         const models = {
             Image: [
-                { id: 'Midjourney', label: 'Midjourney', sub: 'V7' },
-                { id: 'Nano Banana', label: 'Nano Banana', sub: 'Gemini 3' },
-                { id: 'Flux', label: 'Flux', sub: 'BFL' },
-                { id: 'Sora', label: 'Sora', sub: 'OpenAI' },
+                { id: 'Midjourney', label: 'Midjourney', sub: 'V7', spec: '아트·일러스트·컨셉아트', color: '#fd79a8' },
+                { id: 'Nano Banana', label: 'Nano Banana', sub: 'Gemini 3', spec: '텍스트렌더링·제품목업·에디토리얼', color: '#fdcb6e' },
+                { id: 'Flux', label: 'Flux', sub: 'BFL', spec: '포토리얼리즘·프롬프트정확도', color: '#74b9ff' },
+                { id: 'Sora', label: 'Sora', sub: 'OpenAI', spec: '시네마틱·무드·분위기연출', color: '#a29bfe' },
             ],
             Video: [
-                { id: 'Sora', label: 'Sora', sub: 'OpenAI' },
-                { id: 'Veo', label: 'Veo 3.1', sub: 'Google' },
-                { id: 'Vidu', label: 'Vidu', sub: 'Video' },
-                { id: 'Midjourney', label: 'Midjourney', sub: 'Video V1' },
+                { id: 'Sora', label: 'Sora', sub: 'OpenAI', spec: '시네마틱·대사·멀티샷', color: '#a29bfe' },
+                { id: 'Veo', label: 'Veo 3.1', sub: 'Google', spec: '오디오싱크·타임스탬프·대화', color: '#55efc4' },
+                { id: 'Vidu', label: 'Vidu', sub: 'Video', spec: '빠른생성·간결한모션', color: '#ffeaa7' },
+                { id: 'Midjourney', label: 'Midjourney', sub: 'Video V1', spec: '스타일리시·슬로모션·이미지변환', color: '#fd79a8' },
             ]
         };
 
@@ -628,8 +651,10 @@
         function renderModels() {
             const list = models[selectedType];
             modelGrid.innerHTML = list.map((m, i) =>
-                `<button class="model-chip${i === 0 ? ' active' : ''}" data-model="${m.id}">
-                    ${m.label}<span class="sub">${m.sub}</span>
+                `<button class="model-chip${i === 0 ? ' active' : ''}" data-model="${m.id}" style="--chip-accent:${m.color}">
+                    <span class="chip-name">${m.label}</span>
+                    <span class="chip-ver">${m.sub}</span>
+                    <span class="chip-spec">${m.spec}</span>
                 </button>`
             ).join('');
             selectedModel = list[0].id;
