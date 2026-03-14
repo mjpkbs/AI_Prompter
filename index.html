@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>범용 AI 프롬프트 생성기 v2.1</title>
+    <style>
+        /* CSS는 이전 버전과 동일합니다 */
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --bg-color: #f8f9fa;
+            --text-color: #212529;
+            --card-bg: #ffffff;
+            --border-color: #dee2e6;
+            --danger-color: #dc3545;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 700px;
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        textarea, select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 120px;
+            resize: vertical;
+        }
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        .radio-group label {
+            font-weight: normal;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        input[type="radio"] {
+            width: 18px;
+            height: 18px;
+        }
+        .btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .btn:disabled {
+            background-color: var(--secondary-color);
+            cursor: not-allowed;
+        }
+        .result-card {
+            margin-top: 30px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 20px;
+            display: none;
+        }
+        .result-card h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+        #generated-prompt {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background-color: var(--card-bg);
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .copy-btn:hover {
+            background-color: #5a6268;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+        }
+        #api-key-input {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            box-sizing: border-box;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+        }
+        .modal-buttons {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        #save-api-key-btn {
+             background-color: var(--primary-color);
+        }
+         #reset-api-key-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: var(--danger-color);
+            color: white;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div id="api-key-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>OpenAI API 키 입력</h2>
+            <p>API 키는 브라우저에만 저장되며 외부로 전송되지 않습니다.</p>
+            <input type="password" id="api-key-input" placeholder="sk-...">
+            <div class="modal-buttons">
+                <button id="save-api-key-btn" class="btn">저장</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h1>범용 AI 프롬프트 생성기 v2.1</h1>
+        <button id="reset-api-key-btn" title="API 키 재설정">Reset Key</button>
+
+        <div class="form-group">
+            <label for="idea-input">1. 만들고 싶은 내용을 입력하세요:</label>
+            <textarea id="idea-input" placeholder="예: 밤하늘의 은하수를 배경으로 캠프파이어를 하고 있는 우주비행사"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>2. 결과물 종류를 선택하세요:</label>
+            <div class="radio-group">
+                <label><input type="radio" name="output-type" value="Image" checked> 이미지 (Image)</label>
+                <label><input type="radio" name="output-type" value="Video"> 비디오 (Video)</label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="model-select">3. 최적화할 AI 모델을 선택하세요:</label>
+            <select id="model-select"></select>
+        </div>
+
+        <button id="generate-btn" class="btn">프롬프트 생성하기</button>
+
+        <div id="result-container" class="result-card">
+            <h3>생성된 프롬프트:</h3>
+            <div id="generated-prompt">
+                <button class="copy-btn" onclick="copyPrompt()">복사</button>
+                <span id="prompt-text"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const apiKeyModal = document.getElementById('api-key-modal');
+        const apiKeyInput = document.getElementById('api-key-input');
+        const saveApiKeyBtn = document.getElementById('save-api-key-btn');
+        const resetApiKeyBtn = document.getElementById('reset-api-key-btn');
+        const generateBtn = document.getElementById('generate-btn');
+        const resultContainer = document.getElementById('result-container');
+        const promptTextSpan = document.getElementById('prompt-text');
+        const modelSelect = document.getElementById('model-select');
+        const outputTypeRadios = document.querySelectorAll('input[name="output-type"]');
+
+        let openaiApiKey = '';
+
+        // *** 변경점 1: 'Sora.ai'를 이미지 모델 목록에 추가 ***
+        const models = {
+            "Image": ["Midjourney", "nano banana", "Flux", "Sora.ai"],
+            "Video": ["Sora.ai", "Veo", "Vidu", "Midjourney"]
+        };
+
+        function updateModelList() {
+            const selectedType = document.querySelector('input[name="output-type"]:checked').value;
+            modelSelect.innerHTML = ''; 
+            models[selectedType].forEach(modelName => {
+                const option = document.createElement('option');
+                option.value = modelName;
+                option.textContent = modelName;
+                modelSelect.appendChild(option);
+            });
+        }
+        
+        outputTypeRadios.forEach(radio => radio.addEventListener('change', updateModelList));
+
+        document.addEventListener('DOMContentLoaded', () => {
+            openaiApiKey = localStorage.getItem('openaiApiKey');
+            if (!openaiApiKey) {
+                apiKeyModal.style.display = 'flex';
+            } else {
+                apiKeyModal.style.display = 'none';
+            }
+            updateModelList(); 
+        });
+
+        saveApiKeyBtn.addEventListener('click', () => {
+            const key = apiKeyInput.value.trim();
+            if (key) {
+                localStorage.setItem('openaiApiKey', key);
+                openaiApiKey = key;
+                apiKeyModal.style.display = 'none';
+            } else {
+                alert('API 키를 입력해주세요.');
+            }
+        });
+        
+        resetApiKeyBtn.addEventListener('click', () => {
+            if (confirm('저장된 API 키를 삭제하고 새로 입력하시겠습니까?')) {
+                localStorage.removeItem('openaiApiKey');
+                openaiApiKey = '';
+                apiKeyInput.value = '';
+                apiKeyModal.style.display = 'flex';
+            }
+        });
+
+        generateBtn.addEventListener('click', async () => {
+            if (!openaiApiKey) {
+                alert('API 키를 먼저 설정해주세요.');
+                apiKeyModal.style.display = 'flex';
+                return;
+            }
+
+            const idea = document.getElementById('idea-input').value.trim();
+            const outputType = document.querySelector('input[name="output-type"]:checked').value;
+            const model = document.getElementById('model-select').value;
+
+            if (!idea) {
+                alert('만들고 싶은 내용을 입력해주세요.');
+                return;
+            }
+
+            generateBtn.disabled = true;
+            generateBtn.textContent = '생성 중...';
+            resultContainer.style.display = 'none';
+
+            try {
+                const generatedPrompt = await getGeneratedPrompt(idea, outputType, model);
+                promptTextSpan.textContent = generatedPrompt;
+                resultContainer.style.display = 'block';
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`프롬프트 생성에 실패했습니다: ${error.message}`);
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.textContent = '프롬프트 생성하기';
+            }
+        });
+
+        async function getGeneratedPrompt(idea, outputType, model) {
+            // *** 변경점 2: Sora.ai의 이미지 생성 규칙을 시스템 프롬프트에 추가 ***
+            const systemPrompt = `
+You are a 'Universal AI Prompt Generator' v2.1. You must generate the most optimized prompt for a specific target AI model based on a user's idea. Follow the rules for each model precisely.
+
+# Core Task:
+Translate the user's simple idea into an expert-level prompt for the chosen model.
+ONLY return the prompt itself, without any introductory text, explanation, or quotation marks.
+
+# Prompt Generation Rules
+
+## 1. For Image Generation
+- **Midjourney, Flux:**
+  - Structure: Comma-separated keywords.
+  - Formula: [Main Subject], [5 W's & 1 H], [Art Style], [Lighting/Atmosphere], [Color Scheme], [Composition/Camera Angle], [Quality Tags: 8k, photorealistic, ultra-detailed].
+  - Example: A lone astronaut, sitting by a campfire on a desolate moon, watching a vibrant nebula, impressionistic painting, volumetric lighting from the fire, deep blues and fiery oranges, wide-angle shot, hyperrealistic, intricate details.
+
+- **nano banana:**
+  - Structure: Descriptive sentences focusing on Subject-Verb-Place. Emphasize context and detail using the 5 W's & 1 H principle.
+  - Example: A photorealistic image of a solitary astronaut (Who) sitting pensively by a crackling campfire (What/How) on the dark side of the moon (Where) as the brilliant Milky Way galaxy illuminates the scene (When/Context).
+
+- **Sora.ai (for Images):**
+  - Structure: A single, highly detailed paragraph describing a cinematic still frame.
+  - Formula: Describe a frozen moment as if it were a shot from a movie. Detail the subject, environment, lighting, mood, and camera properties (e.g., lens, depth of field). Use rich, evocative language.
+  - Example: A stunningly detailed, cinematic still shot of an astronaut by a campfire. The embers glow, casting a warm, dramatic light on the astronaut's suit and the alien, rocky terrain. In the background, a massive, colorful nebula fills the sky. The shot has a shallow depth of field, focusing on the astronaut's reflective visor.
+
+## 2. For Video Generation
+- **Sora.ai (for Video), Vidu:**
+  - Structure: A short, 1-3 sentence narrative scenario.
+  - Formula: Describe the initial scene, the main action, and any character/camera movement. Define the beginning, middle, and end of the action.
+  - Example: The video starts with a close-up on an astronaut's helmet reflecting a campfire. The camera slowly pulls back to reveal the astronaut is on a strange, alien planet with a purple sky.
+
+- **Veo:**
+  - Structure: A descriptive paragraph specifying cinematic style and high-fidelity details.
+  - Formula: Specify the visual style first (e.g., "A cinematic timelapse video,"). Describe the scene with photorealistic details and define the motion and its evolution.
+  - Example: A cinematic timelapse video of an astronaut setting up a campfire on an alien world. The sky is filled with two moons and swirling auroras. The flames dance and grow, casting long, moving shadows.
+
+- **Midjourney (Video):**
+    - Structure: A simple, clear action or transformation using keywords.
+    - Formula: [Subject] [performing a simple action], [setting/background], [style and quality keywords].
+    - Example: An astronaut igniting a campfire, sparks flying into the night, background of a starry nebula, cinematic, 8k, hyper-detailed.
+---
+Generate the prompt based on the user's request.
+`;
+
+            const userMessage = `
+- Idea: ${idea}
+- Output Type: ${outputType}
+- Target Model: ${model}
+`;
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${openaiApiKey}`
+                },
+                body: JSON.stringify({
+                    model: 'gpt-4-turbo',
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: userMessage }
+                    ],
+                    temperature: 0.7,
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error.message || `HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.choices[0].message.content.trim();
+        }
+
+        function copyPrompt() {
+            const textToCopy = promptTextSpan.textContent;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const copyBtn = document.querySelector('.copy-btn');
+                copyBtn.textContent = '복사됨!';
+                setTimeout(() => {
+                    copyBtn.textContent = '복사';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        }
+    </script>
+</body>
+</html>
