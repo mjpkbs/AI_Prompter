@@ -3,408 +3,826 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>범용 AI 프롬프트 생성기 v2.1</title>
+    <title>AI Prompt Studio v3.0</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        /* CSS는 이전 버전과 동일합니다 */
         :root {
-            --primary-color: #007bff;
-            --secondary-color: #6c757d;
-            --bg-color: #f8f9fa;
-            --text-color: #212529;
-            --card-bg: #ffffff;
-            --border-color: #dee2e6;
-            --danger-color: #dc3545;
+            --bg: #0a0a0c;
+            --surface: #131318;
+            --surface-2: #1a1a22;
+            --surface-3: #22222e;
+            --border: rgba(255,255,255,0.06);
+            --border-hover: rgba(255,255,255,0.12);
+            --text: #e8e8ed;
+            --text-dim: #8888a0;
+            --text-muted: #55556a;
+            --accent: #6c5ce7;
+            --accent-glow: rgba(108,92,231,0.25);
+            --accent-2: #a29bfe;
+            --green: #00d68f;
+            --orange: #fdcb6e;
+            --pink: #fd79a8;
+            --radius: 14px;
+            --radius-sm: 8px;
+            --font: 'Plus Jakarta Sans', -apple-system, sans-serif;
+            --mono: 'JetBrains Mono', monospace;
         }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
             min-height: 100vh;
+            overflow-x: hidden;
         }
-        .container {
-            width: 100%;
-            max-width: 700px;
-            background-color: var(--card-bg);
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+
+        /* ── Ambient background ── */
+        .ambient {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
         }
-        h1 {
+        .ambient::before {
+            content: '';
+            position: absolute;
+            width: 600px; height: 600px;
+            top: -200px; right: -150px;
+            background: radial-gradient(circle, rgba(108,92,231,0.08) 0%, transparent 70%);
+            animation: drift 20s ease-in-out infinite;
+        }
+        .ambient::after {
+            content: '';
+            position: absolute;
+            width: 500px; height: 500px;
+            bottom: -100px; left: -100px;
+            background: radial-gradient(circle, rgba(253,121,168,0.06) 0%, transparent 70%);
+            animation: drift 25s ease-in-out infinite reverse;
+        }
+        @keyframes drift {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(40px, 30px) scale(1.1); }
+        }
+
+        /* ── Layout ── */
+        .shell {
+            position: relative;
+            z-index: 1;
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 40px 20px 60px;
+        }
+
+        /* ── Header ── */
+        .header {
             text-align: center;
-            color: var(--primary-color);
-            margin-bottom: 30px;
+            margin-bottom: 44px;
         }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
+        .header .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            padding: 6px 14px;
+            font-size: 11px;
             font-weight: 600;
-            margin-bottom: 8px;
+            color: var(--accent-2);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 18px;
         }
-        textarea, select {
-            width: 100%;
-            padding: 12px;
+        .badge .dot {
+            width: 6px; height: 6px;
+            background: var(--green);
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .header h1 {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--text) 0%, var(--text-dim) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.2;
+        }
+        .header p {
+            color: var(--text-dim);
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        /* ── Card ── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            margin-bottom: 16px;
+            transition: border-color 0.3s;
+        }
+        .card:hover { border-color: var(--border-hover); }
+
+        .card-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 14px;
+        }
+        .card-label .num {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px; height: 22px;
             border-radius: 6px;
-            border: 1px solid var(--border-color);
-            font-size: 16px;
-            box-sizing: border-box;
+            background: var(--accent);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
         }
+
+        /* ── Textarea ── */
         textarea {
-            height: 120px;
+            width: 100%;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            font-family: var(--font);
+            font-size: 15px;
+            color: var(--text);
             resize: vertical;
+            min-height: 110px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            line-height: 1.6;
         }
-        .radio-group {
-            display: flex;
-            gap: 20px;
-            align-items: center;
+        textarea::placeholder { color: var(--text-muted); }
+        textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
         }
-        .radio-group label {
-            font-weight: normal;
+
+        /* ── Toggle group (image/video) ── */
+        .toggle-row {
             display: flex;
-            align-items: center;
             gap: 8px;
         }
-        input[type="radio"] {
-            width: 18px;
-            height: 18px;
-        }
-        .btn {
-            width: 100%;
-            padding: 15px;
-            font-size: 18px;
+        .toggle-btn {
+            flex: 1;
+            padding: 12px 0;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--surface-2);
+            color: var(--text-dim);
+            font-family: var(--font);
+            font-size: 14px;
             font-weight: 600;
-            color: white;
-            background-color: var(--primary-color);
-            border: none;
-            border-radius: 6px;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
-        .btn:hover {
-            background-color: #0056b3;
+        .toggle-btn:hover { border-color: var(--border-hover); color: var(--text); }
+        .toggle-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+            box-shadow: 0 4px 16px var(--accent-glow);
         }
-        .btn:disabled {
-            background-color: var(--secondary-color);
-            cursor: not-allowed;
+        .toggle-btn svg { width: 16px; height: 16px; }
+
+        /* ── Model selector ── */
+        .model-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 8px;
         }
-        .result-card {
-            margin-top: 30px;
-            background-color: var(--bg-color);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 20px;
-            display: none;
+        .model-chip {
+            padding: 11px 14px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--surface-2);
+            color: var(--text-dim);
+            font-family: var(--font);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+            white-space: nowrap;
         }
-        .result-card h3 {
-            margin-top: 0;
-            color: var(--primary-color);
+        .model-chip:hover { border-color: var(--border-hover); color: var(--text); }
+        .model-chip.active {
+            background: var(--surface-3);
+            border-color: var(--accent);
+            color: var(--accent-2);
+            box-shadow: 0 0 0 3px var(--accent-glow);
         }
-        #generated-prompt {
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            background-color: var(--card-bg);
-            padding: 15px;
-            border-radius: 4px;
-            border: 1px solid var(--border-color);
+        .model-chip .sub {
+            display: block;
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+        .model-chip.active .sub { color: var(--accent-2); opacity: 0.7; }
+
+        /* ── Generate button ── */
+        .gen-btn {
+            width: 100%;
+            padding: 16px 0;
+            border: none;
+            border-radius: var(--radius);
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            color: #fff;
+            font-family: var(--font);
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s;
+            letter-spacing: 0.2px;
             position: relative;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .gen-btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.1));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .gen-btn:hover::after { opacity: 1; }
+        .gen-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 32px var(--accent-glow);
+        }
+        .gen-btn:active { transform: translateY(0); }
+        .gen-btn:disabled {
+            background: var(--surface-3);
+            color: var(--text-muted);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .gen-btn:disabled::after { display: none; }
+
+        /* Loading animation */
+        .gen-btn .spinner {
+            display: none;
+            width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        .gen-btn.loading .spinner { display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Result ── */
+        .result-wrap {
+            display: none;
+            margin-top: 20px;
+            animation: slideUp 0.4s ease-out;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .result-wrap.show { display: block; }
+
+        .result-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+        .result-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .result-header .tag {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--green);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .result-header .tag::before {
+            content: '';
+            width: 8px; height: 8px;
+            background: var(--green);
+            border-radius: 50%;
         }
         .copy-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            padding: 5px 10px;
-            background-color: var(--secondary-color);
-            color: white;
-            border: none;
-            border-radius: 4px;
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--surface-2);
+            color: var(--text-dim);
+            font-family: var(--font);
+            font-size: 12px;
+            font-weight: 600;
             cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
         .copy-btn:hover {
-            background-color: #5a6268;
+            border-color: var(--accent);
+            color: var(--accent-2);
         }
+        .copy-btn.copied {
+            border-color: var(--green);
+            color: var(--green);
+        }
+        .copy-btn svg { width: 13px; height: 13px; }
+
+        .result-body {
+            padding: 20px;
+        }
+        #prompt-text {
+            font-family: var(--mono);
+            font-size: 13.5px;
+            line-height: 1.75;
+            color: var(--text);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        /* ── Modal ── */
         .modal-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.6);
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(12px);
             display: flex;
-            justify-content: center;
             align-items: center;
-            z-index: 1000;
+            justify-content: center;
+            z-index: 100;
+            padding: 20px;
         }
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 500px;
-        }
-        #api-key-input {
+        .modal-overlay.hidden { display: none; }
+        .modal-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 32px;
             width: 100%;
-            padding: 12px;
-            font-size: 16px;
-            box-sizing: border-box;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
+            max-width: 440px;
+            animation: slideUp 0.3s ease-out;
         }
-        .modal-buttons {
-            margin-top: 20px;
+        .modal-box h2 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .modal-box p {
+            font-size: 13px;
+            color: var(--text-dim);
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .modal-box input {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .modal-box input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+        .modal-box input::placeholder { color: var(--text-muted); }
+        .modal-actions {
             display: flex;
             justify-content: flex-end;
             gap: 10px;
+            margin-top: 20px;
         }
-        #save-api-key-btn {
-             background-color: var(--primary-color);
-        }
-         #reset-api-key-btn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background-color: var(--danger-color);
-            color: white;
-            padding: 8px 12px;
-            border: none;
-            border-radius: 4px;
+        .modal-actions button {
+            padding: 10px 22px;
+            border-radius: var(--radius-sm);
+            font-family: var(--font);
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            font-size: 12px;
+            border: none;
+            transition: all 0.2s;
+        }
+        .btn-save {
+            background: var(--accent);
+            color: #fff;
+        }
+        .btn-save:hover { background: #7c6cf0; }
+        .btn-cancel {
+            background: var(--surface-2);
+            border: 1px solid var(--border) !important;
+            color: var(--text-dim);
+        }
+        .btn-cancel:hover { color: var(--text); }
+
+        /* ── Key reset floating ── */
+        .key-reset {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 50;
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-muted);
+            font-family: var(--font);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .key-reset:hover {
+            border-color: #e74c3c;
+            color: #e74c3c;
+        }
+        .key-reset svg { width: 12px; height: 12px; }
+
+        /* ── Footer ── */
+        .footer {
+            text-align: center;
+            margin-top: 32px;
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: 0.3px;
+        }
+
+        /* ── Mobile ── */
+        @media (max-width: 500px) {
+            .shell { padding: 24px 16px 40px; }
+            .card { padding: 20px; }
+            .header h1 { font-size: 22px; }
+            .model-grid { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
 <body>
-    <div id="api-key-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h2>OpenAI API 키 입력</h2>
-            <p>API 키는 브라우저에만 저장되며 외부로 전송되지 않습니다.</p>
-            <input type="password" id="api-key-input" placeholder="sk-...">
-            <div class="modal-buttons">
-                <button id="save-api-key-btn" class="btn">저장</button>
+    <div class="ambient"></div>
+
+    <!-- API Key Modal -->
+    <div id="api-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h2>🔑 API 키 설정</h2>
+            <p>OpenAI API 키를 입력해주세요. 키는 브라우저 로컬에만 저장되며 외부로 전송되지 않습니다.</p>
+            <input type="password" id="api-key-input" placeholder="sk-proj-..." autocomplete="off">
+            <div class="modal-actions">
+                <button class="btn-save" id="save-key-btn">저장</button>
             </div>
         </div>
     </div>
-    
-    <div class="container">
-        <h1>범용 AI 프롬프트 생성기 v2.1</h1>
-        <button id="reset-api-key-btn" title="API 키 재설정">Reset Key</button>
 
-        <div class="form-group">
-            <label for="idea-input">1. 만들고 싶은 내용을 입력하세요:</label>
-            <textarea id="idea-input" placeholder="예: 밤하늘의 은하수를 배경으로 캠프파이어를 하고 있는 우주비행사"></textarea>
+    <!-- Key Reset Button -->
+    <button class="key-reset" id="reset-key-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+        API 키 재설정
+    </button>
+
+    <div class="shell">
+        <!-- Header -->
+        <div class="header">
+            <div class="badge"><span class="dot"></span> AI Prompt Studio v3.0</div>
+            <h1>AI 이미지 · 비디오<br>프롬프트 생성기</h1>
+            <p>아이디어를 입력하면 각 AI 모델에 최적화된 프롬프트를 생성합니다</p>
         </div>
 
-        <div class="form-group">
-            <label>2. 결과물 종류를 선택하세요:</label>
-            <div class="radio-group">
-                <label><input type="radio" name="output-type" value="Image" checked> 이미지 (Image)</label>
-                <label><input type="radio" name="output-type" value="Video"> 비디오 (Video)</label>
+        <!-- Step 1: Idea -->
+        <div class="card">
+            <div class="card-label">
+                <span class="num">1</span> 아이디어 입력
+            </div>
+            <textarea id="idea-input" placeholder="예: 네온 사인이 빛나는 비 오는 도쿄 뒷골목을 걷는 사이버펑크 소녀"></textarea>
+        </div>
+
+        <!-- Step 2: Type -->
+        <div class="card">
+            <div class="card-label">
+                <span class="num">2</span> 결과물 종류
+            </div>
+            <div class="toggle-row">
+                <button class="toggle-btn active" data-type="Image">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                    이미지
+                </button>
+                <button class="toggle-btn" data-type="Video">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                    비디오
+                </button>
             </div>
         </div>
 
-        <div class="form-group">
-            <label for="model-select">3. 최적화할 AI 모델을 선택하세요:</label>
-            <select id="model-select"></select>
+        <!-- Step 3: Model -->
+        <div class="card">
+            <div class="card-label">
+                <span class="num">3</span> AI 모델 선택
+            </div>
+            <div class="model-grid" id="model-grid"></div>
         </div>
 
-        <button id="generate-btn" class="btn">프롬프트 생성하기</button>
+        <!-- Generate -->
+        <button class="gen-btn" id="gen-btn">
+            <span class="spinner"></span>
+            <span class="gen-text">프롬프트 생성</span>
+        </button>
 
-        <div id="result-container" class="result-card">
-            <h3>생성된 프롬프트:</h3>
-            <div id="generated-prompt">
-                <button class="copy-btn" onclick="copyPrompt()">복사</button>
-                <span id="prompt-text"></span>
+        <!-- Result -->
+        <div class="result-wrap" id="result-wrap">
+            <div class="result-card">
+                <div class="result-header">
+                    <span class="tag">생성 완료</span>
+                    <button class="copy-btn" id="copy-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                        <span>복사</span>
+                    </button>
+                </div>
+                <div class="result-body">
+                    <div id="prompt-text"></div>
+                </div>
             </div>
         </div>
+
+        <div class="footer">Powered by OpenAI GPT-4 · 모델별 공식 프롬프트 가이드 기반</div>
     </div>
 
     <script>
-        const apiKeyModal = document.getElementById('api-key-modal');
-        const apiKeyInput = document.getElementById('api-key-input');
-        const saveApiKeyBtn = document.getElementById('save-api-key-btn');
-        const resetApiKeyBtn = document.getElementById('reset-api-key-btn');
-        const generateBtn = document.getElementById('generate-btn');
-        const resultContainer = document.getElementById('result-container');
-        const promptTextSpan = document.getElementById('prompt-text');
-        const modelSelect = document.getElementById('model-select');
-        const outputTypeRadios = document.querySelectorAll('input[name="output-type"]');
+    (() => {
+        // ─── Elements ───
+        const modal = document.getElementById('api-modal');
+        const apiInput = document.getElementById('api-key-input');
+        const saveKeyBtn = document.getElementById('save-key-btn');
+        const resetKeyBtn = document.getElementById('reset-key-btn');
+        const genBtn = document.getElementById('gen-btn');
+        const genText = genBtn.querySelector('.gen-text');
+        const ideaInput = document.getElementById('idea-input');
+        const modelGrid = document.getElementById('model-grid');
+        const resultWrap = document.getElementById('result-wrap');
+        const promptText = document.getElementById('prompt-text');
+        const copyBtn = document.getElementById('copy-btn');
+        const toggleBtns = document.querySelectorAll('.toggle-btn');
 
-        let openaiApiKey = '';
+        let apiKey = '';
+        let selectedType = 'Image';
+        let selectedModel = '';
 
-        // *** 변경점 1: 'Sora.ai'를 이미지 모델 목록에 추가 ***
+        // ─── Models ───
         const models = {
-            "Image": ["Midjourney", "nano banana", "Flux", "Sora.ai"],
-            "Video": ["Sora.ai", "Veo", "Vidu", "Midjourney"]
+            Image: [
+                { id: 'Midjourney', label: 'Midjourney', sub: 'V7' },
+                { id: 'Nano Banana', label: 'Nano Banana', sub: 'Gemini 3' },
+                { id: 'Flux', label: 'Flux', sub: 'BFL' },
+                { id: 'Sora', label: 'Sora', sub: 'OpenAI' },
+            ],
+            Video: [
+                { id: 'Sora', label: 'Sora', sub: 'OpenAI' },
+                { id: 'Veo', label: 'Veo 3.1', sub: 'Google' },
+                { id: 'Vidu', label: 'Vidu', sub: 'Video' },
+                { id: 'Midjourney', label: 'Midjourney', sub: 'Video V1' },
+            ]
         };
 
-        function updateModelList() {
-            const selectedType = document.querySelector('input[name="output-type"]:checked').value;
-            modelSelect.innerHTML = ''; 
-            models[selectedType].forEach(modelName => {
-                const option = document.createElement('option');
-                option.value = modelName;
-                option.textContent = modelName;
-                modelSelect.appendChild(option);
+        // ─── Render model chips ───
+        function renderModels() {
+            const list = models[selectedType];
+            modelGrid.innerHTML = list.map((m, i) =>
+                `<button class="model-chip${i === 0 ? ' active' : ''}" data-model="${m.id}">
+                    ${m.label}<span class="sub">${m.sub}</span>
+                </button>`
+            ).join('');
+            selectedModel = list[0].id;
+
+            modelGrid.querySelectorAll('.model-chip').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    modelGrid.querySelectorAll('.model-chip').forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    selectedModel = chip.dataset.model;
+                });
             });
         }
-        
-        outputTypeRadios.forEach(radio => radio.addEventListener('change', updateModelList));
 
-        document.addEventListener('DOMContentLoaded', () => {
-            openaiApiKey = localStorage.getItem('openaiApiKey');
-            if (!openaiApiKey) {
-                apiKeyModal.style.display = 'flex';
-            } else {
-                apiKeyModal.style.display = 'none';
-            }
-            updateModelList(); 
+        // ─── Type toggle ───
+        toggleBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                toggleBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedType = btn.dataset.type;
+                renderModels();
+            });
         });
 
-        saveApiKeyBtn.addEventListener('click', () => {
-            const key = apiKeyInput.value.trim();
-            if (key) {
-                localStorage.setItem('openaiApiKey', key);
-                openaiApiKey = key;
-                apiKeyModal.style.display = 'none';
-            } else {
-                alert('API 키를 입력해주세요.');
-            }
+        // ─── API key ───
+        apiKey = localStorage.getItem('openaiApiKey') || '';
+        if (!apiKey) modal.classList.remove('hidden');
+
+        saveKeyBtn.addEventListener('click', () => {
+            const k = apiInput.value.trim();
+            if (!k) return alert('API 키를 입력해주세요.');
+            localStorage.setItem('openaiApiKey', k);
+            apiKey = k;
+            modal.classList.add('hidden');
         });
-        
-        resetApiKeyBtn.addEventListener('click', () => {
-            if (confirm('저장된 API 키를 삭제하고 새로 입력하시겠습니까?')) {
-                localStorage.removeItem('openaiApiKey');
-                openaiApiKey = '';
-                apiKeyInput.value = '';
-                apiKeyModal.style.display = 'flex';
-            }
+        apiInput.addEventListener('keydown', e => { if (e.key === 'Enter') saveKeyBtn.click(); });
+
+        resetKeyBtn.addEventListener('click', () => {
+            if (!confirm('저장된 API 키를 삭제하고 새로 입력하시겠습니까?')) return;
+            localStorage.removeItem('openaiApiKey');
+            apiKey = '';
+            apiInput.value = '';
+            modal.classList.remove('hidden');
         });
 
-        generateBtn.addEventListener('click', async () => {
-            if (!openaiApiKey) {
-                alert('API 키를 먼저 설정해주세요.');
-                apiKeyModal.style.display = 'flex';
-                return;
-            }
+        // ─── System Prompt ───
+        function buildSystemPrompt() {
+            return `You are 'AI Prompt Studio v3.0', a universal AI prompt generator. Generate the single most optimized prompt for a specific target AI model. ONLY return the prompt itself—no introductory text, explanation, labels, or quotation marks.
 
-            const idea = document.getElementById('idea-input').value.trim();
-            const outputType = document.querySelector('input[name="output-type"]:checked').value;
-            const model = document.getElementById('model-select').value;
+# Prompt Generation Rules (based on official model documentation)
 
-            if (!idea) {
-                alert('만들고 싶은 내용을 입력해주세요.');
-                return;
-            }
+## IMAGE MODELS
 
-            generateBtn.disabled = true;
-            generateBtn.textContent = '생성 중...';
-            resultContainer.style.display = 'none';
+### Midjourney (V7)
+- V7 uses natural language understanding. Write in complete, descriptive sentences—NOT comma-separated keyword lists.
+- Structure: [Subject + detailed description] → [Action/Context] → [Style/Aesthetic] → [Environment/Setting] → [Technical Parameters]
+- Prompt length: medium (30-80 words before parameters). Front-load the most important subject details.
+- Use specific, vivid synonyms ("gigantic" instead of "big", "navy blue tweed" instead of "dark jacket").
+- Use compound subjects to imply groups ("an armada" instead of "many ships", "a family picnic" instead of listing individuals).
+- Use archetypes when they match intent ("lumberjack" implies flannel, axe, beard). Break archetypes with explicit description when needed.
+- Describe what you WANT, not what you don't want. Use --no [element] parameter only for specific exclusions.
+- Include relevant parameters at the end: --v 7 --ar [aspect ratio] --s [stylize 0-1000, default ~100 for controlled, up to 400 for artistic] --q [quality]
+- For photorealism, add --style raw to reduce Midjourney's artistic embellishment.
+- For character/style consistency, mention --sref or --cref usage in the prompt concept.
+- Text in images: describe the exact text in quotation marks with font/style details.
+
+### Nano Banana (Gemini 3 Image / Nano Banana 2)
+- Structure: Narrative description using [Subject] + [Action] + [Location/Context] + [Composition] + [Style]
+- Write as a creative director briefing a photographer—descriptive sentences, not keyword lists.
+- Be highly specific: name exact lighting setups ("three-point softbox", "Chiaroscuro", "golden hour backlighting"), camera models ("GoPro", "Fujifilm"), lens specs ("85mm f/1.8 shallow DOF", "wide-angle macro"), and film stocks ("Kodak Portra 400", "1980s color film, slightly grainy").
+- Emphasize materiality and texture: "ornate elven plate armor, etched with silver leaf patterns" instead of just "armor".
+- Use positive framing: "empty street" instead of "no cars".
+- For text rendering: enclose desired text in quotation marks, specify font name/style, and placement.
+- For multilingual text: write prompt in one language, specify target language for rendered text.
+- Can reference real-time web data: "Search for current weather in [city] and visualize it as..."
+- Supports multimodal input with up to 14 reference images—describe how each reference should influence the output.
+- For style transfer: describe the content explicitly and name the target artistic style.
+- Supported resolutions: 0.5K, 1K, 2K, 4K. Aspect ratios: 1:1, 3:2, 2:3, 3:4, 4:3, 16:9, 9:16, and more.
+
+### Flux (Black Forest Labs)
+- Structure: Subject + Action + Style + Context. Natural language for descriptions, direct specs for technical elements.
+- Word order matters: front-load the most important elements first. Priority: Main subject → Key action → Critical style → Essential context → Secondary details.
+- Optimal prompt length: Medium (30-80 words). Short for exploration, long for complex scenes.
+- Enhancement layers: Foundation (Subject+Action+Style+Context) → +Visual Layer (lighting, color palette, composition) → +Technical Layer (camera settings, lens specs) → +Atmospheric Layer (mood, emotional tone).
+- NEVER use negative prompts. Use positive alternatives: "peaceful solitude" instead of "no crowds", "clear unobstructed eyes" instead of "without glasses".
+- Text rendering: use quotation marks for exact text, specify placement and typography style.
+- For portraits: [Subject description], [pose/expression], [style], [lighting], [background]
+- For landscapes: [Location/setting], [time/weather], [camera angle], [style], [atmosphere]
+- For products: [Product details], [placement], [lighting setup], [style], [mood]
+
+### Sora (OpenAI — for Images)
+- Structure: A single, richly detailed paragraph describing a cinematic still frame—as if describing a frozen shot from a film.
+- Specify camera properties: lens type, depth of field, focal length, aperture.
+- Detail the subject, environment, lighting source/direction, mood, and color palette.
+- Use evocative, cinematic language. Describe textures, reflections, atmosphere.
+- Name 3-5 palette anchor colors for consistency.
+- Can reference photographic/film styles: "shot on 35mm film with warm halation", "IMAX-scale composition".
+
+## VIDEO MODELS
+
+### Sora (OpenAI — for Video)
+- Structure: [Prose scene description] + [Cinematography block] + [Actions as beats] + [Dialogue block if needed]
+- Prose scene: Describe characters, costumes, scenery, weather, set design in detail. The model will improvise anything you leave out.
+- Cinematography: Specify camera shot (wide, close-up, tracking), lens (32mm, 85mm), depth of field, and mood.
+- Actions: Describe as specific beats with timing: "takes four steps to the window, pauses, pulls the curtain in the final second." One clear camera move + one clear subject action per shot.
+- Dialogue: Place in a dedicated block with speaker labels. Keep lines concise (1-2 short exchanges for 4s, a few more for 8s clips).
+- Sound: Describe diegetic sounds explicitly ("faint rail screech, train brakes hiss"). Use ambient sound cues even in silent shots.
+- Lighting: Specify quality, color, direction. "Soft window light with warm lamp fill, cool rim from hallway. Palette: amber, cream, walnut brown."
+- For multi-shot: describe each shot as a distinct block with its own camera setup, action, and lighting.
+- Can accept image input as first-frame reference. Describe what happens next.
+- Shorter clips (4s) are more reliable. Stitch two 4s clips rather than one 8s for complex sequences.
+- Style cues set the visual DNA early: "1970s romantic drama, shot on 35mm", "hand-painted 2D/3D hybrid animation".
+
+### Veo 3.1 (Google)
+- Formula: [Cinematography] + [Subject] + [Action] + [Context] + [Style & Ambiance]
+- Cinematography: Use professional terms—dolly shot, tracking shot, crane shot, aerial view, slow pan, POV shot, shallow depth of field, wide-angle lens.
+- Directing audio: Use quotation marks for dialogue (A woman says, "We have to leave now."). Describe SFX explicitly (SFX: thunder cracks in the distance). Define ambient noise (Ambient: quiet hum of a starship bridge).
+- Timestamp prompting for multi-shot sequences: [00:00-00:02] Medium shot... [00:02-00:04] Reverse shot... etc.
+- Negative prompts: describe exclusions positively ("a desolate landscape with no buildings or roads" instead of "no man-made structures").
+- Supports image-to-video, first-and-last-frame transitions, and "ingredients to video" with reference images.
+- Resolution: 720p or 1080p. Aspect: 16:9 or 9:16. Clip length: 4, 6, or 8 seconds.
+- For style consistency: specify era, film stock, color grading explicitly.
+
+### Vidu
+- Structure: A concise 1-3 sentence narrative scenario.
+- Describe the initial scene, main action, and character/camera movement.
+- Define a clear beginning, middle, and end within the short clip.
+- Keep descriptions visual and action-oriented.
+
+### Midjourney (Video V1)
+- Image-to-video model: describe a simple, clear action or transformation.
+- Structure: [Subject performing a specific action], [setting/background], [style keywords]
+- Use --motion low (default, subtle) or --motion high (big movements).
+- Keep prompts focused on one single continuous motion.
+- Best for: slow reveals, subtle animations, character turns, environmental motion.
+- Add --v 7 and relevant aspect ratio.
+
+---
+Generate only the prompt. Match the exact style and structure that the target model expects.`;
+        }
+
+        // ─── Generate ───
+        genBtn.addEventListener('click', async () => {
+            if (!apiKey) { modal.classList.remove('hidden'); return; }
+            const idea = ideaInput.value.trim();
+            if (!idea) return alert('아이디어를 입력해주세요.');
+
+            genBtn.disabled = true;
+            genBtn.classList.add('loading');
+            genText.textContent = '생성 중…';
+            resultWrap.classList.remove('show');
 
             try {
-                const generatedPrompt = await getGeneratedPrompt(idea, outputType, model);
-                promptTextSpan.textContent = generatedPrompt;
-                resultContainer.style.display = 'block';
-            } catch (error) {
-                console.error('Error:', error);
-                alert(`프롬프트 생성에 실패했습니다: ${error.message}`);
+                const res = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+                    body: JSON.stringify({
+                        model: 'gpt-4-turbo',
+                        messages: [
+                            { role: 'system', content: buildSystemPrompt() },
+                            { role: 'user', content: `- Idea: ${idea}\n- Output Type: ${selectedType}\n- Target Model: ${selectedModel}` }
+                        ],
+                        temperature: 0.7
+                    })
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error?.message || `HTTP ${res.status}`);
+                }
+                const data = await res.json();
+                promptText.textContent = data.choices[0].message.content.trim();
+                resultWrap.classList.add('show');
+            } catch (e) {
+                alert(`생성 실패: ${e.message}`);
             } finally {
-                generateBtn.disabled = false;
-                generateBtn.textContent = '프롬프트 생성하기';
+                genBtn.disabled = false;
+                genBtn.classList.remove('loading');
+                genText.textContent = '프롬프트 생성';
             }
         });
 
-        async function getGeneratedPrompt(idea, outputType, model) {
-            // *** 변경점 2: Sora.ai의 이미지 생성 규칙을 시스템 프롬프트에 추가 ***
-            const systemPrompt = `
-You are a 'Universal AI Prompt Generator' v2.1. You must generate the most optimized prompt for a specific target AI model based on a user's idea. Follow the rules for each model precisely.
-
-# Core Task:
-Translate the user's simple idea into an expert-level prompt for the chosen model.
-ONLY return the prompt itself, without any introductory text, explanation, or quotation marks.
-
-# Prompt Generation Rules
-
-## 1. For Image Generation
-- **Midjourney, Flux:**
-  - Structure: Comma-separated keywords.
-  - Formula: [Main Subject], [5 W's & 1 H], [Art Style], [Lighting/Atmosphere], [Color Scheme], [Composition/Camera Angle], [Quality Tags: 8k, photorealistic, ultra-detailed].
-  - Example: A lone astronaut, sitting by a campfire on a desolate moon, watching a vibrant nebula, impressionistic painting, volumetric lighting from the fire, deep blues and fiery oranges, wide-angle shot, hyperrealistic, intricate details.
-
-- **nano banana:**
-  - Structure: Descriptive sentences focusing on Subject-Verb-Place. Emphasize context and detail using the 5 W's & 1 H principle.
-  - Example: A photorealistic image of a solitary astronaut (Who) sitting pensively by a crackling campfire (What/How) on the dark side of the moon (Where) as the brilliant Milky Way galaxy illuminates the scene (When/Context).
-
-- **Sora.ai (for Images):**
-  - Structure: A single, highly detailed paragraph describing a cinematic still frame.
-  - Formula: Describe a frozen moment as if it were a shot from a movie. Detail the subject, environment, lighting, mood, and camera properties (e.g., lens, depth of field). Use rich, evocative language.
-  - Example: A stunningly detailed, cinematic still shot of an astronaut by a campfire. The embers glow, casting a warm, dramatic light on the astronaut's suit and the alien, rocky terrain. In the background, a massive, colorful nebula fills the sky. The shot has a shallow depth of field, focusing on the astronaut's reflective visor.
-
-## 2. For Video Generation
-- **Sora.ai (for Video), Vidu:**
-  - Structure: A short, 1-3 sentence narrative scenario.
-  - Formula: Describe the initial scene, the main action, and any character/camera movement. Define the beginning, middle, and end of the action.
-  - Example: The video starts with a close-up on an astronaut's helmet reflecting a campfire. The camera slowly pulls back to reveal the astronaut is on a strange, alien planet with a purple sky.
-
-- **Veo:**
-  - Structure: A descriptive paragraph specifying cinematic style and high-fidelity details.
-  - Formula: Specify the visual style first (e.g., "A cinematic timelapse video,"). Describe the scene with photorealistic details and define the motion and its evolution.
-  - Example: A cinematic timelapse video of an astronaut setting up a campfire on an alien world. The sky is filled with two moons and swirling auroras. The flames dance and grow, casting long, moving shadows.
-
-- **Midjourney (Video):**
-    - Structure: A simple, clear action or transformation using keywords.
-    - Formula: [Subject] [performing a simple action], [setting/background], [style and quality keywords].
-    - Example: An astronaut igniting a campfire, sparks flying into the night, background of a starry nebula, cinematic, 8k, hyper-detailed.
----
-Generate the prompt based on the user's request.
-`;
-
-            const userMessage = `
-- Idea: ${idea}
-- Output Type: ${outputType}
-- Target Model: ${model}
-`;
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${openaiApiKey}`
-                },
-                body: JSON.stringify({
-                    model: 'gpt-4-turbo',
-                    messages: [
-                        { role: 'system', content: systemPrompt },
-                        { role: 'user', content: userMessage }
-                    ],
-                    temperature: 0.7,
-                })
+        // ─── Copy ───
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(promptText.textContent).then(() => {
+                const span = copyBtn.querySelector('span');
+                copyBtn.classList.add('copied');
+                span.textContent = '복사됨!';
+                setTimeout(() => { span.textContent = '복사'; copyBtn.classList.remove('copied'); }, 2000);
             });
+        });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error.message || `HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            return data.choices[0].message.content.trim();
-        }
-
-        function copyPrompt() {
-            const textToCopy = promptTextSpan.textContent;
-            navigator.clipboard.writeText(textToCopy).then(() => {
-                const copyBtn = document.querySelector('.copy-btn');
-                copyBtn.textContent = '복사됨!';
-                setTimeout(() => {
-                    copyBtn.textContent = '복사';
-                }, 2000);
-            }).catch(err => {
-                console.error('Failed to copy: ', err);
-            });
-        }
+        // ─── Init ───
+        renderModels();
+    })();
     </script>
 </body>
 </html>
