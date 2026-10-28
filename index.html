@@ -608,7 +608,7 @@
             </div>
         </div>
 
-        <div class="footer">Powered by OpenAI GPT-4 · 뉴스 재연 최적화 · 텍스트/로고 자동 제외 · 모델별 공식 가이드 기반</div>
+        <div class="footer">Powered by OpenAI GPT-5.6 · 뉴스 재연 최적화 · 텍스트/로고 자동 제외 · 모델별 공식 가이드 기반</div>
     </div>
 
     <script>
@@ -854,12 +854,11 @@ Generate only the prompt. Match the exact style and structure that the target mo
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
                     body: JSON.stringify({
-                        model: 'gpt-4-turbo',
+                        model: 'gpt-5.6-sol',
                         messages: [
                             { role: 'system', content: buildSystemPrompt() },
                             { role: 'user', content: `- Idea: ${idea}\n- Output Type: ${selectedType}\n- Target Model: ${selectedModel}` }
-                        ],
-                        temperature: 0.7
+                        ]
                     })
                 });
                 if (!res.ok) {
